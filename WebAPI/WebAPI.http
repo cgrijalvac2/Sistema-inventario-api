@@ -1,0 +1,233 @@
+@WebAPI_HostAddress = http://localhost:5191
+
+### Probar que la API está funcionando
+GET {{WebAPI_HostAddress}}/
+
+### Login (usuario creado por los datos iniciales)
+POST {{WebAPI_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "CorreoElectronico": "admin@inventario.com",
+  "Password": "Admin123!"
+}
+
+### Crear categoría
+POST {{WebAPI_HostAddress}}/api/Categorias
+Content-Type: application/json
+
+{
+  "NombreCategoria": "Bebidas",
+  "DescripcionCategoria": "Aguas, jugos y gaseosas"
+}
+
+### Crear producto
+POST {{WebAPI_HostAddress}}/api/Productos
+Content-Type: application/json
+
+{
+  "CodigoProducto": "P001",
+  "NombreProducto": "Agua pura 600ml",
+  "ID_Categoria": 1,
+  "ID_UnidadMedida": 1,
+  "Costo": 5,
+  "Precio": 10
+}
+
+### Listar productos
+GET {{WebAPI_HostAddress}}/api/Productos?soloActivos=true
+
+### Crear proveedor
+POST {{WebAPI_HostAddress}}/api/Proveedores
+Content-Type: application/json
+
+{
+  "Nombre": "Distribuidora El Sol",
+  "NIT": "1234567-8",
+  "Telefono": "5555-5555",
+  "DiasCredito": 30
+}
+
+### Crear cliente
+POST {{WebAPI_HostAddress}}/api/Clientes
+Content-Type: application/json
+
+{
+  "Nombre": "Consumidor final",
+  "NIT": "CF"
+}
+
+### Inventario inicial (ajuste de entrada, motivo 1 = Inventario inicial)
+POST {{WebAPI_HostAddress}}/api/Transacciones
+Content-Type: application/json
+
+{
+  "CodigoTipoTransaccion": "AJUSTE_ENTRADA",
+  "ID_Usuario": 1,
+  "ID_Almacen": 1,
+  "Detalles": [
+    { "ID_Producto": 1, "Cantidad": 10, "PrecioUnitario": 5, "ID_Motivo": 1 }
+  ]
+}
+
+### Orden de compra
+POST {{WebAPI_HostAddress}}/api/OrdenesCompra
+Content-Type: application/json
+
+{
+  "ID_Proveedor": 1,
+  "ID_Almacen": 1,
+  "ID_Usuario": 1,
+  "FechaEsperada": "2026-11-05",
+  "Detalles": [
+    { "ID_Producto": 1, "Cantidad": 20, "CostoUnitario": 6 }
+  ]
+}
+
+### Compra que recibe la orden de compra 1
+POST {{WebAPI_HostAddress}}/api/Transacciones
+Content-Type: application/json
+
+{
+  "CodigoTipoTransaccion": "COMPRA",
+  "ID_Usuario": 1,
+  "ID_Almacen": 1,
+  "ID_Proveedor": 1,
+  "ID_OrdenCompra": 1,
+  "Referencia": "FAC-A-555",
+  "Detalles": [
+    { "ID_Producto": 1, "Cantidad": 20 }
+  ]
+}
+
+### Venta (si no se manda PrecioUnitario se usa el precio del producto)
+POST {{WebAPI_HostAddress}}/api/Transacciones
+Content-Type: application/json
+
+{
+  "CodigoTipoTransaccion": "VENTA",
+  "ID_Usuario": 1,
+  "ID_Almacen": 1,
+  "ID_Cliente": 1,
+  "Detalles": [
+    { "ID_Producto": 1, "Cantidad": 5 }
+  ]
+}
+
+### Nota de crédito: el cliente devuelve 2 unidades de la venta 3
+POST {{WebAPI_HostAddress}}/api/Transacciones
+Content-Type: application/json
+
+{
+  "CodigoTipoTransaccion": "NC_VENTA",
+  "ID_Usuario": 1,
+  "ID_Almacen": 1,
+  "ID_Cliente": 1,
+  "ID_TransaccionOrigen": 3,
+  "Detalles": [
+    { "ID_Producto": 1, "Cantidad": 2 }
+  ]
+}
+
+### Nota de débito: cargo adicional sobre la venta 3 (no mueve inventario)
+POST {{WebAPI_HostAddress}}/api/Transacciones
+Content-Type: application/json
+
+{
+  "CodigoTipoTransaccion": "ND_VENTA",
+  "ID_Usuario": 1,
+  "ID_Almacen": 1,
+  "ID_Cliente": 1,
+  "ID_TransaccionOrigen": 3,
+  "Observaciones": "Cargo por flete",
+  "Detalles": [
+    { "ID_Producto": 1, "Cantidad": 1, "PrecioUnitario": 15 }
+  ]
+}
+
+### Anular una transacción
+POST {{WebAPI_HostAddress}}/api/Transacciones/4/anular
+Content-Type: application/json
+
+{
+  "ID_Usuario": 1,
+  "Motivo": "Error de digitación"
+}
+
+### Listar ventas de octubre
+GET {{WebAPI_HostAddress}}/api/Transacciones?tipo=VENTA&desde=2026-10-01&hasta=2026-10-31
+
+### Crear un segundo almacén
+POST {{WebAPI_HostAddress}}/api/Almacenes
+Content-Type: application/json
+
+{
+  "Codigo": "SUC1",
+  "Nombre": "Sucursal 1"
+}
+
+### Transferencia de Bodega central a Sucursal 1
+POST {{WebAPI_HostAddress}}/api/Transferencias
+Content-Type: application/json
+
+{
+  "ID_AlmacenOrigen": 1,
+  "ID_AlmacenDestino": 2,
+  "ID_Usuario": 1,
+  "Detalles": [
+    { "ID_Producto": 1, "Cantidad": 3 }
+  ]
+}
+
+### Recibir la transferencia 1
+POST {{WebAPI_HostAddress}}/api/Transferencias/1/recibir
+Content-Type: application/json
+
+{
+  "ID_Usuario": 1
+}
+
+### Listado de existencias
+GET {{WebAPI_HostAddress}}/api/Inventario/existencias?soloConStock=true
+
+### Kardex de un producto
+GET {{WebAPI_HostAddress}}/api/Inventario/kardex?idProducto=1
+
+### Registro de movimientos de entrada
+GET {{WebAPI_HostAddress}}/api/Inventario/movimientos?tipoMovimiento=ENTRADA
+
+### Productos con stock bajo
+GET {{WebAPI_HostAddress}}/api/Inventario/stock-bajo
+
+### Definir stock mínimo y máximo (almacén 1, producto 1)
+PUT {{WebAPI_HostAddress}}/api/Inventario/limites/1/1
+Content-Type: application/json
+
+{
+  "StockMinimo": 10,
+  "StockMaximo": 100
+}
+
+### Crear usuario vendedor con acceso al almacén 1
+POST {{WebAPI_HostAddress}}/api/Usuarios
+Content-Type: application/json
+
+{
+  "NombreCompleto": "Ana López",
+  "CorreoElectronico": "ana@inventario.com",
+  "Password": "Ventas2026",
+  "ID_Rol": 3,
+  "Almacenes": [1]
+}
+
+### Parámetros del sistema
+GET {{WebAPI_HostAddress}}/api/ParametrosSistema
+
+### Dashboard: indicadores del almacén 1
+GET {{WebAPI_HostAddress}}/api/Dashboard/indicadores?idAlmacen=1
+
+### Dashboard: ventas de los últimos 7 días
+GET {{WebAPI_HostAddress}}/api/Dashboard/ventas-por-dia?dias=7
+
+### Dashboard: productos más vendidos del mes
+GET {{WebAPI_HostAddress}}/api/Dashboard/top-productos
