@@ -21,11 +21,15 @@ namespace WebAPI.DTOs
         [Range(1, int.MaxValue, ErrorMessage = "El campo {0} es requerido")]
         public int ID_UnidadMedida { get; set; }
 
-        // Costo inicial. Después lo recalculan automáticamente las compras
-        [Range(0, 999999999, ErrorMessage = "El campo {0} no puede ser negativo")]
+        // Costo de compra. Cada compra lo actualiza con el costo pagado al proveedor
+        [Range(0, 999999999, ErrorMessage = "El costo de compra no puede ser negativo")]
         public decimal Costo { get; set; }
 
-        [Range(0, 999999999, ErrorMessage = "El campo {0} no puede ser negativo")]
+        // Precio de venta
+        [Range(0, 999999999, ErrorMessage = "El precio de venta no puede ser negativo")]
         public decimal Precio { get; set; }
+
+        // true = activo, false = inactivo. Al crear, si no viene se toma como activo; al editar, si no viene no se cambia
+        public bool? Estado { get; set; }
     }
 }

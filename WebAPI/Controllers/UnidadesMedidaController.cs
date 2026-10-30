@@ -64,7 +64,8 @@ namespace WebAPI.Controllers
         {
             var nueva = (await _context.UnidadMedida.ConsultarAsync("sp_UnidadMedida_Insertar",
                 Parametro("@Nombre", unidadMedida.Nombre),
-                Parametro("@Abreviatura", unidadMedida.Abreviatura))).First();
+                Parametro("@Abreviatura", unidadMedida.Abreviatura),
+                Parametro("@Estado", unidadMedida.Estado))).First();
 
             return CreatedAtAction("GetUnidadMedida", new { id = nueva.ID_UnidadMedida }, nueva);
         }

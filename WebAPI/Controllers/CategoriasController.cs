@@ -64,7 +64,8 @@ namespace WebAPI.Controllers
         {
             var nueva = (await _context.Categoria.ConsultarAsync("sp_Categoria_Insertar",
                 Parametro("@NombreCategoria", categoria.NombreCategoria),
-                Parametro("@DescripcionCategoria", categoria.DescripcionCategoria))).First();
+                Parametro("@DescripcionCategoria", categoria.DescripcionCategoria),
+                Parametro("@Estado", categoria.Estado))).First();
 
             return CreatedAtAction("GetCategoria", new { id = nueva.ID_Categoria }, nueva);
         }

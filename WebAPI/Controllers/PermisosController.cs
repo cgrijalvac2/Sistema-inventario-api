@@ -66,7 +66,8 @@ namespace WebAPI.Controllers
             var nuevo = (await _context.Permiso.ConsultarAsync("sp_Permiso_Insertar",
                 Parametro("@Codigo", permiso.Codigo),
                 Parametro("@Nombre", permiso.Nombre),
-                Parametro("@Descripcion", permiso.Descripcion))).First();
+                Parametro("@Descripcion", permiso.Descripcion),
+                Parametro("@Estado", permiso.Estado))).First();
 
             return CreatedAtAction("GetPermiso", new { id = nuevo.ID_Permiso }, nuevo);
         }

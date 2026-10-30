@@ -64,7 +64,8 @@ namespace WebAPI.Controllers
             var id = await _context.Database.ObtenerIdAsync("sp_Rol_Insertar",
                 Parametro("@NombreRol", rolDto.NombreRol),
                 Parametro("@Descripcion", rolDto.Descripcion),
-                Parametro("@Permisos", Json(rolDto.Permisos)));
+                Parametro("@Permisos", Json(rolDto.Permisos)),
+                Parametro("@Estado", rolDto.Estado ?? true));
 
             return CreatedAtAction("GetRol", new { id }, (await GetRol(id)).Value);
         }
@@ -77,7 +78,8 @@ namespace WebAPI.Controllers
                 Parametro("@ID_Rol", id),
                 Parametro("@NombreRol", rolDto.NombreRol),
                 Parametro("@Descripcion", rolDto.Descripcion),
-                Parametro("@Permisos", Json(rolDto.Permisos)));
+                Parametro("@Permisos", Json(rolDto.Permisos)),
+                Parametro("@Estado", rolDto.Estado));
 
             return NoContent();
         }

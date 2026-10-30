@@ -76,7 +76,8 @@ namespace WebAPI.Controllers
                 Parametro("@CorreoElectronico", usuarioDto.CorreoElectronico),
                 Parametro("@PasswordHash", hash),
                 Parametro("@ID_Rol", usuarioDto.ID_Rol),
-                Parametro("@Almacenes", Json(usuarioDto.Almacenes)));
+                Parametro("@Almacenes", Json(usuarioDto.Almacenes)),
+                Parametro("@Estado", usuarioDto.Estado ?? true));
 
             return CreatedAtAction("GetUsuario", new { usuarioid = id }, (await GetUsuario(id)).Value);
         }
@@ -97,7 +98,8 @@ namespace WebAPI.Controllers
                 Parametro("@CorreoElectronico", usuarioDto.CorreoElectronico),
                 Parametro("@PasswordHash", hash),
                 Parametro("@ID_Rol", usuarioDto.ID_Rol),
-                Parametro("@Almacenes", Json(usuarioDto.Almacenes)));
+                Parametro("@Almacenes", Json(usuarioDto.Almacenes)),
+                Parametro("@Estado", usuarioDto.Estado));
 
             return NoContent();
         }

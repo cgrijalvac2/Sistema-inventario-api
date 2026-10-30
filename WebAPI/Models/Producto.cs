@@ -25,7 +25,7 @@ namespace WebAPI.Models
         [StringLength(255)]
         public string? Descripcion { get; set; }
 
-        // Costo promedio ponderado: se recalcula solo con cada compra
+        // Costo de compra: se captura en el producto y cada compra lo actualiza con el último costo pagado
         [Column(TypeName = "decimal(18,2)")]
         public decimal Costo { get; set; }
 

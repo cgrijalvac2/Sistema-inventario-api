@@ -62,7 +62,8 @@ namespace WebAPI.Controllers
         public async Task<ActionResult<MotivoAjuste>> PostMotivoAjuste(MotivoAjuste motivoAjuste)
         {
             var nuevo = (await _context.MotivoAjuste.ConsultarAsync("sp_MotivoAjuste_Insertar",
-                Parametro("@Descripcion", motivoAjuste.Descripcion))).First();
+                Parametro("@Descripcion", motivoAjuste.Descripcion),
+                Parametro("@Estado", motivoAjuste.Estado))).First();
 
             return CreatedAtAction("GetMotivoAjuste", new { id = nuevo.ID_Motivo }, nuevo);
         }

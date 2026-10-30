@@ -29,7 +29,8 @@ CREATE OR ALTER PROCEDURE sp_ParametroSistema_Insertar
     @ID_Almacen  INT = NULL,
     @Clave       NVARCHAR(50),
     @Valor       NVARCHAR(255),
-    @Descripcion NVARCHAR(255) = NULL
+    @Descripcion NVARCHAR(255) = NULL,
+    @Estado BIT = 1   -- 1 = activo, 0 = inactivo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -43,7 +44,7 @@ BEGIN
         THROW 50001, N'El almacén no existe', 1;
 
     INSERT INTO ParametroSistema (ID_Almacen, Clave, Valor, Descripcion, Estado, FechaModificacion)
-    VALUES (@ID_Almacen, UPPER(@Clave), @Valor, @Descripcion, 1, GETDATE());
+    VALUES (@ID_Almacen, UPPER(@Clave), @Valor, @Descripcion, @Estado, GETDATE());
 
     SET @ID = SCOPE_IDENTITY();
     EXEC sp_ParametroSistema_Obtener @ID;

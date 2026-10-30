@@ -31,7 +31,8 @@ GO
 
 CREATE OR ALTER PROCEDURE sp_Categoria_Insertar
     @NombreCategoria      NVARCHAR(100),
-    @DescripcionCategoria NVARCHAR(255) = NULL
+    @DescripcionCategoria NVARCHAR(255) = NULL,
+    @Estado BIT = 1   -- 1 = activo, 0 = inactivo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -41,7 +42,7 @@ BEGIN
         THROW 50001, N'Ya existe una categoría con ese nombre', 1;
 
     INSERT INTO Categoria (NombreCategoria, DescripcionCategoria, Estado)
-    VALUES (@NombreCategoria, @DescripcionCategoria, 1);
+    VALUES (@NombreCategoria, @DescripcionCategoria, @Estado);
 
     SET @ID = SCOPE_IDENTITY();
     EXEC sp_Categoria_Obtener @ID;
@@ -109,7 +110,8 @@ GO
 
 CREATE OR ALTER PROCEDURE sp_UnidadMedida_Insertar
     @Nombre      NVARCHAR(50),
-    @Abreviatura NVARCHAR(10)
+    @Abreviatura NVARCHAR(10),
+    @Estado BIT = 1   -- 1 = activo, 0 = inactivo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -119,7 +121,7 @@ BEGIN
         THROW 50001, N'Ya existe una unidad de medida con esa abreviatura', 1;
 
     INSERT INTO UnidadMedida (Nombre, Abreviatura, Estado)
-    VALUES (@Nombre, UPPER(@Abreviatura), 1);
+    VALUES (@Nombre, UPPER(@Abreviatura), @Estado);
 
     SET @ID = SCOPE_IDENTITY();
     EXEC sp_UnidadMedida_Obtener @ID;
@@ -189,7 +191,8 @@ CREATE OR ALTER PROCEDURE sp_Almacen_Insertar
     @Codigo      NVARCHAR(20),
     @Nombre      NVARCHAR(100),
     @Direccion   NVARCHAR(255) = NULL,
-    @Descripcion NVARCHAR(255) = NULL
+    @Descripcion NVARCHAR(255) = NULL,
+    @Estado BIT = 1   -- 1 = activo, 0 = inactivo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -199,7 +202,7 @@ BEGIN
         THROW 50001, N'Ya existe un almacén con ese código', 1;
 
     INSERT INTO Almacen (Codigo, Nombre, Direccion, Descripcion, Estado)
-    VALUES (UPPER(@Codigo), @Nombre, @Direccion, @Descripcion, 1);
+    VALUES (UPPER(@Codigo), @Nombre, @Direccion, @Descripcion, @Estado);
 
     SET @ID = SCOPE_IDENTITY();
     EXEC sp_Almacen_Obtener @ID;
@@ -272,13 +275,14 @@ END
 GO
 
 CREATE OR ALTER PROCEDURE sp_MotivoAjuste_Insertar
-    @Descripcion NVARCHAR(100)
+    @Descripcion NVARCHAR(100),
+    @Estado BIT = 1   -- 1 = activo, 0 = inactivo
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @ID INT;
 
-    INSERT INTO MotivoAjuste (Descripcion, Estado) VALUES (@Descripcion, 1);
+    INSERT INTO MotivoAjuste (Descripcion, Estado) VALUES (@Descripcion, @Estado);
 
     SET @ID = SCOPE_IDENTITY();
     EXEC sp_MotivoAjuste_Obtener @ID;
@@ -359,7 +363,8 @@ CREATE OR ALTER PROCEDURE sp_Producto_Validar
     @CodigoProducto  NVARCHAR(50),
     @ID_Categoria    INT,
     @ID_UnidadMedida INT,
-    @Precio          DECIMAL(18,2)
+    @Precio          DECIMAL(18,2),
+    @Costo           DECIMAL(18,2) = 0
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -374,7 +379,10 @@ BEGIN
         THROW 50001, N'La unidad de medida no existe o está inactiva', 1;
 
     IF @Precio < 0
-        THROW 50001, N'El precio no puede ser negativo', 1;
+        THROW 50001, N'El precio de venta no puede ser negativo', 1;
+
+    IF @Costo < 0
+        THROW 50001, N'El costo de compra no puede ser negativo', 1;
 END
 GO
 
@@ -385,21 +393,22 @@ CREATE OR ALTER PROCEDURE sp_Producto_Insertar
     @ID_Categoria    INT,
     @ID_UnidadMedida INT,
     @Costo           DECIMAL(18,2) = 0,
-    @Precio          DECIMAL(18,2) = 0
+    @Precio          DECIMAL(18,2) = 0,
+    @Estado BIT = 1   -- 1 = activo, 0 = inactivo
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    EXEC sp_Producto_Validar 0, @CodigoProducto, @ID_Categoria, @ID_UnidadMedida, @Precio;
+    EXEC sp_Producto_Validar 0, @CodigoProducto, @ID_Categoria, @ID_UnidadMedida, @Precio, @Costo;
 
     INSERT INTO Producto (CodigoProducto, NombreProducto, Descripcion, ID_Categoria, ID_UnidadMedida, Costo, Precio, Estado, FechaCreacion)
-    VALUES (UPPER(@CodigoProducto), @NombreProducto, @Descripcion, @ID_Categoria, @ID_UnidadMedida, @Costo, @Precio, 1, GETDATE());
+    VALUES (UPPER(@CodigoProducto), @NombreProducto, @Descripcion, @ID_Categoria, @ID_UnidadMedida, @Costo, @Precio, @Estado, GETDATE());
 
     SELECT CAST(SCOPE_IDENTITY() AS INT) AS Value;
 END
 GO
 
--- El costo no se modifica aquí: lo recalculan las compras (costo promedio ponderado)
+-- Costo = costo de compra (también lo actualiza cada compra). Precio = precio de venta
 CREATE OR ALTER PROCEDURE sp_Producto_Actualizar
     @ID_Producto     INT,
     @CodigoProducto  NVARCHAR(50),
@@ -407,7 +416,9 @@ CREATE OR ALTER PROCEDURE sp_Producto_Actualizar
     @Descripcion     NVARCHAR(255) = NULL,
     @ID_Categoria    INT,
     @ID_UnidadMedida INT,
-    @Precio          DECIMAL(18,2)
+    @Precio          DECIMAL(18,2),
+    @Estado BIT = NULL,   -- NULL = no cambia el estado
+    @Costo  DECIMAL(18,2) = NULL   -- NULL = no cambia el costo de compra
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -415,11 +426,14 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM Producto WHERE ID_Producto = @ID_Producto)
         THROW 50404, N'El producto no existe', 1;
 
-    EXEC sp_Producto_Validar @ID_Producto, @CodigoProducto, @ID_Categoria, @ID_UnidadMedida, @Precio;
+    DECLARE @CostoValidar DECIMAL(18,2) = ISNULL(@Costo, 0);
+    EXEC sp_Producto_Validar @ID_Producto, @CodigoProducto, @ID_Categoria, @ID_UnidadMedida, @Precio, @CostoValidar;
 
     UPDATE Producto
        SET CodigoProducto = UPPER(@CodigoProducto), NombreProducto = @NombreProducto, Descripcion = @Descripcion,
-           ID_Categoria = @ID_Categoria, ID_UnidadMedida = @ID_UnidadMedida, Precio = @Precio
+           ID_Categoria = @ID_Categoria, ID_UnidadMedida = @ID_UnidadMedida, Precio = @Precio,
+           Costo = ISNULL(@Costo, Costo),
+           Estado = ISNULL(@Estado, Estado)
      WHERE ID_Producto = @ID_Producto;
 END
 GO
@@ -474,7 +488,8 @@ CREATE OR ALTER PROCEDURE sp_Cliente_Insertar
     @NIT               NVARCHAR(20),
     @Direccion         NVARCHAR(255) = NULL,
     @Telefono          NVARCHAR(50) = NULL,
-    @CorreoElectronico NVARCHAR(100) = NULL
+    @CorreoElectronico NVARCHAR(100) = NULL,
+    @Estado BIT = 1   -- 1 = activo, 0 = inactivo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -501,7 +516,7 @@ BEGIN
            SET Nombre = @Nombre, Direccion = @Direccion, Telefono = @Telefono, CorreoElectronico = @CorreoElectronico
          WHERE ID_Contacto = @ID_Contacto;
 
-    INSERT INTO Cliente (ID_Contacto, Estado) VALUES (@ID_Contacto, 1);
+    INSERT INTO Cliente (ID_Contacto, Estado) VALUES (@ID_Contacto, @Estado);
     SET @ID_Cliente = SCOPE_IDENTITY();
 
     COMMIT;
@@ -516,7 +531,8 @@ CREATE OR ALTER PROCEDURE sp_Cliente_Actualizar
     @NIT               NVARCHAR(20),
     @Direccion         NVARCHAR(255) = NULL,
     @Telefono          NVARCHAR(50) = NULL,
-    @CorreoElectronico NVARCHAR(100) = NULL
+    @CorreoElectronico NVARCHAR(100) = NULL,
+    @Estado BIT = NULL   -- NULL = no cambia el estado
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -535,6 +551,8 @@ BEGIN
     UPDATE DirectorioContacto
        SET Nombre = @Nombre, NIT = @NIT, Direccion = @Direccion, Telefono = @Telefono, CorreoElectronico = @CorreoElectronico
      WHERE ID_Contacto = @ID_Contacto;
+
+    UPDATE Cliente SET Estado = ISNULL(@Estado, Estado) WHERE ID_Cliente = @ID_Cliente;
 END
 GO
 
@@ -589,7 +607,8 @@ CREATE OR ALTER PROCEDURE sp_Proveedor_Insertar
     @Direccion         NVARCHAR(255) = NULL,
     @Telefono          NVARCHAR(50) = NULL,
     @CorreoElectronico NVARCHAR(100) = NULL,
-    @DiasCredito       INT = 0
+    @DiasCredito       INT = 0,
+    @Estado BIT = 1   -- 1 = activo, 0 = inactivo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -621,7 +640,7 @@ BEGIN
            SET Nombre = @Nombre, Direccion = @Direccion, Telefono = @Telefono, CorreoElectronico = @CorreoElectronico
          WHERE ID_Contacto = @ID_Contacto;
 
-    INSERT INTO Proveedor (ID_Contacto, DiasCredito, Estado) VALUES (@ID_Contacto, @DiasCredito, 1);
+    INSERT INTO Proveedor (ID_Contacto, DiasCredito, Estado) VALUES (@ID_Contacto, @DiasCredito, @Estado);
     SET @ID_Proveedor = SCOPE_IDENTITY();
 
     COMMIT;
@@ -637,7 +656,8 @@ CREATE OR ALTER PROCEDURE sp_Proveedor_Actualizar
     @Direccion         NVARCHAR(255) = NULL,
     @Telefono          NVARCHAR(50) = NULL,
     @CorreoElectronico NVARCHAR(100) = NULL,
-    @DiasCredito       INT = 0
+    @DiasCredito       INT = 0,
+    @Estado BIT = NULL   -- NULL = no cambia el estado
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -662,7 +682,7 @@ BEGIN
 
     BEGIN TRANSACTION;
 
-    UPDATE Proveedor SET DiasCredito = @DiasCredito WHERE ID_Proveedor = @ID_Proveedor;
+    UPDATE Proveedor SET DiasCredito = @DiasCredito, Estado = ISNULL(@Estado, Estado) WHERE ID_Proveedor = @ID_Proveedor;
 
     UPDATE DirectorioContacto
        SET Nombre = @Nombre, NIT = @NIT, Direccion = @Direccion, Telefono = @Telefono, CorreoElectronico = @CorreoElectronico

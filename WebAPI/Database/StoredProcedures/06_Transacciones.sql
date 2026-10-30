@@ -94,7 +94,9 @@ CREATE OR ALTER PROCEDURE sp_Transaccion_Registrar
     @ID_TransaccionOrigen  INT = NULL,
     @Referencia            NVARCHAR(100) = NULL,
     @Observaciones         NVARCHAR(255) = NULL,
-    @Detalles              NVARCHAR(MAX)
+    @Detalles              NVARCHAR(MAX),
+    -- 1 cuando lo llama otro SP (ej: sp_InventarioAlmacen_Asignar): no devuelve el SELECT final
+    @SinResultado          BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -292,7 +294,8 @@ BEGIN
     END
 
     -- Precio sugerido para lo que siga vacío y costo con el que se valoriza el kardex
-    DECLARE @RecalculaCosto BIT = CASE WHEN @CodigoTipo IN (N'COMPRA', N'AJUSTE_ENTRADA') THEN 1 ELSE 0 END;
+    -- Compras y ajustes de entrada (inventario inicial) actualizan el costo de compra del producto
+    DECLARE @ActualizaCosto BIT = CASE WHEN @CodigoTipo IN (N'COMPRA', N'AJUSTE_ENTRADA') THEN 1 ELSE 0 END;
 
     UPDATE l
        SET PrecioUnitario = ISNULL(l.PrecioUnitario, CASE WHEN @TipoTercero = N'CLIENTE' THEN p.Precio ELSE p.Costo END)
@@ -300,7 +303,7 @@ BEGIN
       JOIN Producto p ON p.ID_Producto = l.ID_Producto;
 
     UPDATE l
-       SET CostoUnitario = CASE WHEN @RecalculaCosto = 1 OR @CodigoTipo = N'NC_COMPRA' THEN l.PrecioUnitario ELSE p.Costo END
+       SET CostoUnitario = CASE WHEN @ActualizaCosto = 1 OR @CodigoTipo = N'NC_COMPRA' THEN l.PrecioUnitario ELSE p.Costo END
       FROM @Lineas l
       JOIN Producto p ON p.ID_Producto = l.ID_Producto;
 
@@ -320,7 +323,7 @@ BEGIN
 
     -- ===== 7. Guardar todo en una transacción: si algo falla no se guarda nada =====
     DECLARE @ID_Transaccion INT, @Numero NVARCHAR(30), @EsEntrada BIT = CASE WHEN @Factor > 0 THEN 1 ELSE 0 END;
-    DECLARE @Fila INT = 1, @TotalLineas INT, @ID_Detalle INT, @Existencia INT,
+    DECLARE @Fila INT = 1, @TotalLineas INT, @ID_Detalle INT,
             @Producto INT, @Cantidad INT, @Precio DECIMAL(18,2), @Costo DECIMAL(18,2), @Desc DECIMAL(18,2), @Motivo INT;
 
     SELECT @TotalLineas = COUNT(*) FROM @Lineas;
@@ -350,16 +353,9 @@ BEGIN
 
             SET @ID_Detalle = SCOPE_IDENTITY();
 
-            -- Costo promedio ponderado: (existencia * costo actual + cantidad * costo de compra) / existencia nueva
-            IF @RecalculaCosto = 1
-            BEGIN
-                SELECT @Existencia = ISNULL(SUM(StockActual), 0) FROM InventarioAlmacen WHERE ID_Producto = @Producto;
-
-                UPDATE Producto
-                   SET Costo = CASE WHEN @Existencia <= 0 THEN @Precio
-                                    ELSE ROUND((@Existencia * Costo + @Cantidad * @Precio) / (@Existencia + @Cantidad), 2) END
-                 WHERE ID_Producto = @Producto;
-            END
+            -- Costo de compra: el producto queda con el costo unitario de esta compra (último costo de compra)
+            IF @ActualizaCosto = 1
+                UPDATE Producto SET Costo = @Precio WHERE ID_Producto = @Producto;
 
             -- Factor_Kardex: +1 entra, -1 sale, 0 no mueve inventario (notas de débito)
             IF @Factor <> 0
@@ -392,7 +388,8 @@ BEGIN
         THROW;
     END CATCH
 
-    SELECT @ID_Transaccion AS Value;
+    IF @SinResultado = 0
+        SELECT @ID_Transaccion AS Value;
 END
 GO
 

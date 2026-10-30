@@ -13,5 +13,8 @@ namespace WebAPI.DTOs
 
         // ID de los permisos que tendrá el rol
         public List<int> Permisos { get; set; } = new();
+
+        // true = activo, false = inactivo. Al crear, si no viene se toma como activo; al editar, si no viene no se cambia
+        public bool? Estado { get; set; }
     }
 }

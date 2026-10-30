@@ -50,7 +50,8 @@ namespace WebAPI.Controllers
                 Parametro("@NIT", clienteDto.NIT),
                 Parametro("@Direccion", clienteDto.Direccion),
                 Parametro("@Telefono", clienteDto.Telefono),
-                Parametro("@CorreoElectronico", clienteDto.CorreoElectronico));
+                Parametro("@CorreoElectronico", clienteDto.CorreoElectronico),
+                Parametro("@Estado", clienteDto.Estado ?? true));
 
             return CreatedAtAction("GetCliente", new { id }, (await GetCliente(id)).Value);
         }
@@ -65,7 +66,8 @@ namespace WebAPI.Controllers
                 Parametro("@NIT", clienteDto.NIT),
                 Parametro("@Direccion", clienteDto.Direccion),
                 Parametro("@Telefono", clienteDto.Telefono),
-                Parametro("@CorreoElectronico", clienteDto.CorreoElectronico));
+                Parametro("@CorreoElectronico", clienteDto.CorreoElectronico),
+                Parametro("@Estado", clienteDto.Estado));
 
             return NoContent();
         }

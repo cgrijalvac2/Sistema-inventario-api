@@ -67,7 +67,8 @@ namespace WebAPI.Controllers
                 Parametro("@ID_Almacen", parametro.ID_Almacen),
                 Parametro("@Clave", parametro.Clave),
                 Parametro("@Valor", parametro.Valor),
-                Parametro("@Descripcion", parametro.Descripcion))).First();
+                Parametro("@Descripcion", parametro.Descripcion),
+                Parametro("@Estado", parametro.Estado))).First();
 
             return CreatedAtAction("GetParametroSistema", new { id = nuevo.ID_Parametro }, nuevo);
         }

@@ -7,7 +7,7 @@ using static WebAPI.Helpers.SpHelper;
 namespace WebAPI.Controllers
 {
     // Compras, ventas, notas de crédito, notas de débito y ajustes.
-    // Toda la lógica (validaciones, stock, kardex, costo promedio, IVA) está en sp_Transaccion_Registrar
+    // Toda la lógica (validaciones, stock, kardex, costo de compra, IVA) está en sp_Transaccion_Registrar
     [Route("api/[controller]")]
     [ApiController]
     public class TransaccionesController : ControllerBase

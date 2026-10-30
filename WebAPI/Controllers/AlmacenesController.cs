@@ -68,7 +68,8 @@ namespace WebAPI.Controllers
                 Parametro("@Codigo", almacen.Codigo),
                 Parametro("@Nombre", almacen.Nombre),
                 Parametro("@Direccion", almacen.Direccion),
-                Parametro("@Descripcion", almacen.Descripcion))).First();
+                Parametro("@Descripcion", almacen.Descripcion),
+                Parametro("@Estado", almacen.Estado))).First();
 
             return CreatedAtAction("GetAlmacen", new { id = nuevo.ID_Almacen }, nuevo);
         }

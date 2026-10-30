@@ -22,6 +22,9 @@ namespace WebAPI.DTOs
         [EmailAddress(ErrorMessage = "El formato del campo {0} es inválido")]
         [StringLength(100)]
         public string? CorreoElectronico { get; set; }
+
+        // true = activo, false = inactivo. Al crear, si no viene se toma como activo; al editar, si no viene no se cambia
+        public bool? Estado { get; set; }
     }
 
     // El proveedor lleva los mismos datos que el cliente más los días de crédito

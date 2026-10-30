@@ -131,7 +131,8 @@ CREATE OR ALTER PROCEDURE sp_Usuario_Insertar
     @CorreoElectronico NVARCHAR(100),
     @PasswordHash      NVARCHAR(255),
     @ID_Rol            INT,
-    @Almacenes         NVARCHAR(MAX) = N'[]'
+    @Almacenes         NVARCHAR(MAX) = N'[]',
+    @Estado BIT = 1   -- 1 = activo, 0 = inactivo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -143,7 +144,7 @@ BEGIN
     BEGIN TRANSACTION;
 
     INSERT INTO Usuario (NombreCompleto, CorreoElectronico, PasswordHash, ID_Rol, Estado, FechaCreacion)
-    VALUES (@NombreCompleto, LOWER(@CorreoElectronico), @PasswordHash, @ID_Rol, 1, GETDATE());
+    VALUES (@NombreCompleto, LOWER(@CorreoElectronico), @PasswordHash, @ID_Rol, @Estado, GETDATE());
 
     SET @ID_Usuario = SCOPE_IDENTITY();
 
@@ -163,7 +164,8 @@ CREATE OR ALTER PROCEDURE sp_Usuario_Actualizar
     @CorreoElectronico NVARCHAR(100),
     @PasswordHash      NVARCHAR(255) = NULL,
     @ID_Rol            INT,
-    @Almacenes         NVARCHAR(MAX) = N'[]'
+    @Almacenes         NVARCHAR(MAX) = N'[]',
+    @Estado BIT = NULL   -- NULL = no cambia el estado
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -180,7 +182,8 @@ BEGIN
        SET NombreCompleto = @NombreCompleto,
            CorreoElectronico = LOWER(@CorreoElectronico),
            PasswordHash = ISNULL(@PasswordHash, PasswordHash),
-           ID_Rol = @ID_Rol
+           ID_Rol = @ID_Rol,
+           Estado = ISNULL(@Estado, Estado)
      WHERE ID_Usuario = @ID_Usuario;
 
     -- Se reemplazan los almacenes asignados
@@ -266,7 +269,8 @@ GO
 CREATE OR ALTER PROCEDURE sp_Rol_Insertar
     @NombreRol   NVARCHAR(50),
     @Descripcion NVARCHAR(255) = NULL,
-    @Permisos    NVARCHAR(MAX) = N'[]'
+    @Permisos    NVARCHAR(MAX) = N'[]',
+    @Estado BIT = 1   -- 1 = activo, 0 = inactivo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -278,7 +282,7 @@ BEGIN
     BEGIN TRANSACTION;
 
     INSERT INTO Rol (NombreRol, Descripcion, Estado, FechaCreacion)
-    VALUES (@NombreRol, @Descripcion, 1, GETDATE());
+    VALUES (@NombreRol, @Descripcion, @Estado, GETDATE());
 
     SET @ID_Rol = SCOPE_IDENTITY();
 
@@ -295,7 +299,8 @@ CREATE OR ALTER PROCEDURE sp_Rol_Actualizar
     @ID_Rol      INT,
     @NombreRol   NVARCHAR(50),
     @Descripcion NVARCHAR(255) = NULL,
-    @Permisos    NVARCHAR(MAX) = N'[]'
+    @Permisos    NVARCHAR(MAX) = N'[]',
+    @Estado BIT = NULL   -- NULL = no cambia el estado
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -306,12 +311,23 @@ BEGIN
 
     EXEC sp_Rol_Validar @ID_Rol, @NombreRol, @Permisos;
 
+    -- Protección: el Administrador siempre conserva SEGURIDAD (si no, nadie podría volver a asignar permisos)
+    IF EXISTS (SELECT 1 FROM Rol WHERE ID_Rol = @ID_Rol AND NombreRol = N'Administrador')
+       AND NOT EXISTS (SELECT 1 FROM OPENJSON(@Permisos) j
+                         JOIN Permiso p ON p.ID_Permiso = TRY_CAST(j.value AS INT)
+                        WHERE p.Codigo = N'SEGURIDAD')
+        THROW 50001, N'No se puede quitar el permiso SEGURIDAD al rol Administrador', 1;
+
+    IF @Estado = 0 AND EXISTS (SELECT 1 FROM Usuario WHERE ID_Rol = @ID_Rol AND Estado = 1)
+        THROW 50001, N'No se puede desactivar un rol que tiene usuarios activos', 1;
+
     BEGIN TRANSACTION;
 
     UPDATE Rol
        SET NombreRol = @NombreRol,
            Descripcion = @Descripcion,
-           FechaModificacion = GETDATE()
+           FechaModificacion = GETDATE(),
+           Estado = ISNULL(@Estado, Estado)
      WHERE ID_Rol = @ID_Rol;
 
     DELETE FROM RolPermiso WHERE ID_Rol = @ID_Rol;
@@ -366,7 +382,8 @@ GO
 CREATE OR ALTER PROCEDURE sp_Permiso_Insertar
     @Codigo      NVARCHAR(50),
     @Nombre      NVARCHAR(100),
-    @Descripcion NVARCHAR(255) = NULL
+    @Descripcion NVARCHAR(255) = NULL,
+    @Estado BIT = 1   -- 1 = activo, 0 = inactivo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -376,7 +393,7 @@ BEGIN
         THROW 50001, N'Ya existe un permiso con ese código', 1;
 
     INSERT INTO Permiso (Codigo, Nombre, Descripcion, Estado)
-    VALUES (UPPER(@Codigo), @Nombre, @Descripcion, 1);
+    VALUES (UPPER(@Codigo), @Nombre, @Descripcion, @Estado);
 
     SET @ID = SCOPE_IDENTITY();
     EXEC sp_Permiso_Obtener @ID;

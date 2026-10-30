@@ -106,8 +106,8 @@ erDiagram
         nvarchar50 CodigoProducto UK
         nvarchar150 NombreProducto
         nvarchar255 Descripcion
-        decimal Costo "promedio ponderado"
-        decimal Precio
+        decimal Costo "costo de compra"
+        decimal Precio "precio de venta"
         bit Estado
         datetime2 FechaCreacion
     }
@@ -296,5 +296,5 @@ erDiagram
 | 12 | **OrdenCompraDetalle / TransferenciaDetalle** | Se quitó `Estado` | Igual que el punto anterior. |
 | 13 | **Transferencia** | `ID_UsuarioCrea` → `ID_UsuarioEnvia`; se unieron `ID_UsuarioRecibe` e `ID_UsuarioRechaza`; se quitaron `FechaCreacion` y campos de modificación | Simplifica el flujo ENVIADA → RECIBIDA / RECHAZADA. Quien recibe o rechaza es siempre el usuario del almacén destino. |
 | 14 | **HistorialMovimientos** | Se agregaron `Concepto` y `Documento`; se quitó `Estado` | El kardex se lee sin hacer joins (ej: "VENTA – VEN-000015"). El historial nunca se modifica. |
-| 15 | **Producto** | Se agregaron `Descripcion` y `FechaCreacion` | `Costo` ahora es el costo promedio ponderado que recalculan las compras. |
+| 15 | **Producto** | Se agregaron `Descripcion` y `FechaCreacion` | `Costo` es el costo de compra (lo actualiza cada compra) y `Precio` el precio de venta. |
 | 16 | **Todas** | Índices únicos en códigos y nombres; borrado en cascada desactivado (excepto encabezado → detalle) | Evita duplicados y que al borrar un registro se pierda historial. SQL Server además no permite cascadas con varios caminos (Transferencia → Almacen ×2). |

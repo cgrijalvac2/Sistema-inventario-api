@@ -53,12 +53,13 @@ namespace WebAPI.Controllers
                 Parametro("@ID_Categoria", productoDto.ID_Categoria),
                 Parametro("@ID_UnidadMedida", productoDto.ID_UnidadMedida),
                 Parametro("@Costo", productoDto.Costo),
-                Parametro("@Precio", productoDto.Precio));
+                Parametro("@Precio", productoDto.Precio),
+                Parametro("@Estado", productoDto.Estado ?? true));
 
             return CreatedAtAction("GetProducto", new { id }, (await GetProducto(id)).Value);
         }
 
-        // PUT: api/Productos/5  (el costo no se modifica aquí: lo calculan las compras)
+        // PUT: api/Productos/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProducto(int id, ProductoRequestDTO productoDto)
         {
@@ -69,7 +70,9 @@ namespace WebAPI.Controllers
                 Parametro("@Descripcion", productoDto.Descripcion),
                 Parametro("@ID_Categoria", productoDto.ID_Categoria),
                 Parametro("@ID_UnidadMedida", productoDto.ID_UnidadMedida),
-                Parametro("@Precio", productoDto.Precio));
+                Parametro("@Precio", productoDto.Precio),
+                Parametro("@Costo", productoDto.Costo),
+                Parametro("@Estado", productoDto.Estado));
 
             return NoContent();
         }

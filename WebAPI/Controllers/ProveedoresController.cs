@@ -51,7 +51,8 @@ namespace WebAPI.Controllers
                 Parametro("@Direccion", proveedorDto.Direccion),
                 Parametro("@Telefono", proveedorDto.Telefono),
                 Parametro("@CorreoElectronico", proveedorDto.CorreoElectronico),
-                Parametro("@DiasCredito", proveedorDto.DiasCredito));
+                Parametro("@DiasCredito", proveedorDto.DiasCredito),
+                Parametro("@Estado", proveedorDto.Estado ?? true));
 
             return CreatedAtAction("GetProveedor", new { id }, (await GetProveedor(id)).Value);
         }
@@ -67,7 +68,8 @@ namespace WebAPI.Controllers
                 Parametro("@Direccion", proveedorDto.Direccion),
                 Parametro("@Telefono", proveedorDto.Telefono),
                 Parametro("@CorreoElectronico", proveedorDto.CorreoElectronico),
-                Parametro("@DiasCredito", proveedorDto.DiasCredito));
+                Parametro("@DiasCredito", proveedorDto.DiasCredito),
+                Parametro("@Estado", proveedorDto.Estado));
 
             return NoContent();
         }

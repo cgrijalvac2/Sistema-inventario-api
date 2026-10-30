@@ -14,7 +14,7 @@ BEGIN
     SET NOCOUNT ON;
     SELECT i.ID_Almacen, a.Nombre AS Almacen, i.ID_Producto, p.CodigoProducto, p.NombreProducto,
            c.NombreCategoria AS Categoria, u.Abreviatura AS UnidadMedida,
-           i.StockActual, i.StockMinimo, i.StockMaximo, p.Costo,
+           i.StockActual, i.StockMinimo, i.StockMaximo, p.Costo, p.Precio,
            CAST(i.StockActual * p.Costo AS DECIMAL(18,2)) AS ValorInventario,
            CASE WHEN i.StockMinimo > 0 AND i.StockActual <= i.StockMinimo THEN N'BAJO'
                 WHEN i.StockMaximo > 0 AND i.StockActual > i.StockMaximo THEN N'EXCESO'

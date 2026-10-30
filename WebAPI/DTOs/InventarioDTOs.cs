@@ -27,6 +27,9 @@ namespace WebAPI.DTOs
 
         public decimal Costo { get; set; }
 
+        // Precio de venta del producto
+        public decimal Precio { get; set; }
+
         // StockActual * Costo
         public decimal ValorInventario { get; set; }
 

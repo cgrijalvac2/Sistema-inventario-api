@@ -22,5 +22,8 @@ namespace WebAPI.DTOs
 
         // Almacenes en los que podrá trabajar
         public List<int> Almacenes { get; set; } = new();
+
+        // true = activo, false = inactivo. Al crear, si no viene se toma como activo; al editar, si no viene no se cambia
+        public bool? Estado { get; set; }
     }
 }
