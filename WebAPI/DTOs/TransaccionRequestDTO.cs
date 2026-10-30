@@ -33,6 +33,10 @@ namespace WebAPI.DTOs
         [StringLength(255)]
         public string? Observaciones { get; set; }
 
+        // Solo notas de crédito: true = el producto regresa / sale del inventario, false = no mueve inventario
+        // (ej: descuento posterior o producto dañado que no vuelve). Si no viene se toma como true
+        public bool? DevuelveInventario { get; set; }
+
         [MinLength(1, ErrorMessage = "El documento debe tener al menos un producto")]
         public List<TransaccionDetalleRequestDTO> Detalles { get; set; } = new();
     }

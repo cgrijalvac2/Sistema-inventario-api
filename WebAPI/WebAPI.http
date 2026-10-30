@@ -231,3 +231,15 @@ GET {{WebAPI_HostAddress}}/api/Dashboard/ventas-por-dia?dias=7
 
 ### Dashboard: productos más vendidos del mes
 GET {{WebAPI_HostAddress}}/api/Dashboard/top-productos
+
+### Crear usuario administrador
+POST {{WebAPI_HostAddress}}/api/Usuarios
+Content-Type: application/json
+
+{
+  "Password": "Abc$2020",
+  "NombreCompleto": "Administrador",
+  "CorreoElectronico": "cfgrijalvac@gmail.com",
+  "ID_Rol": 1,
+  "Estado": true
+}

@@ -96,7 +96,10 @@ CREATE OR ALTER PROCEDURE sp_Transaccion_Registrar
     @Observaciones         NVARCHAR(255) = NULL,
     @Detalles              NVARCHAR(MAX),
     -- 1 cuando lo llama otro SP (ej: sp_InventarioAlmacen_Asignar): no devuelve el SELECT final
-    @SinResultado          BIT = 0
+    @SinResultado          BIT = 0,
+    -- Solo notas de crédito: según la razón, el producto regresa (o sale) del inventario (1) o no se mueve (0).
+    -- NULL = 1. Las notas de débito nunca mueven inventario
+    @DevuelveInventario    BIT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -323,6 +326,11 @@ BEGIN
 
     -- ===== 7. Guardar todo en una transacción: si algo falla no se guarda nada =====
     DECLARE @ID_Transaccion INT, @Numero NVARCHAR(30), @EsEntrada BIT = CASE WHEN @Factor > 0 THEN 1 ELSE 0 END;
+
+    -- ¿Mueve inventario? Factor 0 (notas de débito) nunca; una nota de crédito solo si su razón lo indica
+    DECLARE @MueveInventario BIT = CASE WHEN @Factor = 0 THEN 0
+                                        WHEN @RequiereOrigen = 1 AND @DevuelveInventario = 0 THEN 0
+                                        ELSE 1 END;
     DECLARE @Fila INT = 1, @TotalLineas INT, @ID_Detalle INT,
             @Producto INT, @Cantidad INT, @Precio DECIMAL(18,2), @Costo DECIMAL(18,2), @Desc DECIMAL(18,2), @Motivo INT;
 
@@ -358,7 +366,7 @@ BEGIN
                 UPDATE Producto SET Costo = @Precio WHERE ID_Producto = @Producto;
 
             -- Factor_Kardex: +1 entra, -1 sale, 0 no mueve inventario (notas de débito)
-            IF @Factor <> 0
+            IF @MueveInventario = 1
                 EXEC sp_Inventario_RegistrarMovimiento @ID_Almacen, @Producto, @Cantidad, @EsEntrada, @Costo,
                                                        @ID_Usuario, @CodigoTipo, @Numero, @ID_Detalle, NULL;
 
@@ -438,8 +446,10 @@ BEGIN
             WHILE 1 = 1
             BEGIN
                 SELECT TOP 1 @ID_Detalle = ID_Detalle, @Producto = ID_Producto, @Cantidad = Cantidad, @Costo = CostoUnitario
-                  FROM TransaccionDetalle
+                  FROM TransaccionDetalle d
                  WHERE ID_Transaccion = @ID_Transaccion AND ID_Detalle > @ID_Detalle
+                   -- Solo se revierte lo que movió inventario (una nota de crédito sin devolución no generó kardex)
+                   AND EXISTS (SELECT 1 FROM HistorialMovimientos h WHERE h.ID_Detalle = d.ID_Detalle)
                  ORDER BY ID_Detalle;
 
                 IF @@ROWCOUNT = 0 BREAK;

@@ -67,7 +67,8 @@ namespace WebAPI.Controllers
                 Parametro("@ID_TransaccionOrigen", transaccionDto.ID_TransaccionOrigen),
                 Parametro("@Referencia", transaccionDto.Referencia),
                 Parametro("@Observaciones", transaccionDto.Observaciones),
-                Parametro("@Detalles", Json(transaccionDto.Detalles)));
+                Parametro("@Detalles", Json(transaccionDto.Detalles)),
+                Parametro("@DevuelveInventario", transaccionDto.DevuelveInventario));
 
             return CreatedAtAction("GetTransaccion", new { id }, (await GetTransaccion(id)).Value);
         }
